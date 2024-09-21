@@ -1,0 +1,15 @@
+"""TiDaL is a time-series data logging utility for C++ applications"""
+
+module(name = "tidal")
+
+bazel_dep(name = "eigen", version = "3.4.0")
+bazel_dep(name = "rules_cc", version = "0.0.9")
+
+# Hedron's Compile Commands Extractor for Bazel
+# bazel run @hedron_compile_commands//:refresh_all
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+git_override(
+    module_name = "hedron_compile_commands",
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
+    commit = "1e08f8e0507b6b6b1f4416a9a22cf5c28beaba93",
+)
