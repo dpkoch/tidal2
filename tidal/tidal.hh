@@ -111,9 +111,25 @@ class Log {
         return *this;
     }
 
-    template <typename T, unsigned int rows, unsigned int cols>
+    template <typename T, int rows, int cols>
     Log& operator<<(const Eigen::Matrix<T, rows, cols>& data) {
-        file_.write(data.data(), data.size());
+        using MatrixType = std::decay_t<decltype(data)>;
+        EIGEN_STATIC_ASSERT_FIXED_SIZE(MatrixType);
+
+        // By default, Eigen stores matrices in column-major order. Numpy stores them in
+        // row-major order, and there is no easy way swap the order after reading from the
+        // buffer. If this matrix is in column-major order and has more than one column, write
+        // the transpose to the log.
+        if constexpr (!MatrixType::IsRowMajor && cols > 1) {
+            // Use assignment to a temporary matrix to force evaluation of transpose
+            const Eigen::Matrix<T, cols, rows> tmp = data.transpose();
+            file_.write(reinterpret_cast<const char*>(tmp.data()),
+                        MatrixType::SizeAtCompileTime * sizeof(T));
+
+        } else {
+            file_.write(reinterpret_cast<const char*>(data.data()),
+                        MatrixType::SizeAtCompileTime * sizeof(T));
+        }
         return *this;
     }
 
