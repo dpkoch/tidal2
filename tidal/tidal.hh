@@ -32,7 +32,7 @@ class Log {
 
        private:
         void write_header(const std::string& name) {
-            log_ << detail::Marker::STREAM << id_ << name;
+            log_ << detail::Marker::METADATA << id_ << name;
             write_format();
         }
 
