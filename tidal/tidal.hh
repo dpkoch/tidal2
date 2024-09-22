@@ -57,7 +57,7 @@ class Log {
         template <typename T>
         std::enable_if_t<detail::is_eigen_v<T>> write_additional_format_data(Log& log) {
             EIGEN_STATIC_ASSERT_FIXED_SIZE(T);
-
+            log << detail::resolve_scalar_type<typename T::Scalar>();
             if constexpr (T::IsVectorAtCompileTime) {
                 log << T::RowsAtCompileTime;
             } else {
