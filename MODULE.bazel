@@ -4,6 +4,7 @@ module(name = "tidal")
 
 bazel_dep(name = "eigen", version = "3.4.0")
 bazel_dep(name = "rules_cc", version = "0.0.9")
+bazel_dep(name = "rules_python", version = "0.35.0")
 
 # Hedron's Compile Commands Extractor for Bazel
 # bazel run @hedron_compile_commands//:refresh_all
@@ -13,3 +14,17 @@ git_override(
     remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
     commit = "1e08f8e0507b6b6b1f4416a9a22cf5c28beaba93",
 )
+
+# Python / PyPI
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    python_version = "3.12",
+)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    python_version = "3.12",
+    hub_name = "tidal_pypi",
+    requirements_lock = "//:requirements_lock.txt",
+)
+use_repo(pip, pypi = "tidal_pypi")
