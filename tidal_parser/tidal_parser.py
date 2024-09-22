@@ -4,7 +4,7 @@ import collections
 import dataclasses
 import io
 import struct
-from collections.abc import Buffer, Callable
+from collections.abc import Buffer, Callable, Iterable, Iterator
 
 import numpy as np
 
@@ -24,12 +24,15 @@ class Stream:
     time: np.ndarray
     data: np.ndarray
 
-    def data_items(self):
-        if self.data.dtype.names is None:
+    def fields(self) -> Iterable[str]:
+        return self.data.dtype.names
+
+    def data_items(self) -> Iterator[tuple[str, np.ndarray]]:
+        if self.fields() is None:
             yield "data", self.data
             return
 
-        for name in self.data.dtype.names:
+        for name in self.fields():
             yield name, self.data[name]
 
 
