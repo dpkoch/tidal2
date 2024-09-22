@@ -7,7 +7,7 @@
 
 #include <Eigen/Core>
 
-#include "tidal/log_format.hh"
+#include "tidal/detail.hh"
 
 namespace tidal {
 

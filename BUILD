@@ -6,9 +6,7 @@ load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
 cc_library(
     name = "detail",
-    hdrs = [
-        "tidal/log_format.hh",
-    ],
+    hdrs = ["tidal/detail.hh"],
 )
 
 cc_library(
