@@ -1,5 +1,7 @@
 // Copyright 2024 Daniel Koch
 
+#pragma once
+
 #include <fstream>
 #include <memory>
 #include <string>
