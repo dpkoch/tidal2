@@ -63,16 +63,16 @@ class Parser:
         # convert parsed data into numpy arrays
         self._convert()
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Stream:
         return self._data[key]
 
-    def keys(self):
+    def keys(self) -> Iterable[str]:
         return self._data.keys()
 
-    def streams(self):
+    def streams(self) -> Iterable[np.ndarray]:
         return self._data.values()
 
-    def items(self):
+    def items(self) -> Iterable[tuple[str, np.ndarray]]:
         return self._data.items()
 
     @staticmethod
