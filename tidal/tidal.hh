@@ -20,7 +20,7 @@ class Log {
        public:
         void log(unsigned long timestamp, Types... data) {
             write_data_prefix(timestamp);
-            log_recurse(data...);
+            write_data_recurse(data...);
         }
 
        private:
@@ -47,9 +47,8 @@ class Log {
             write_field_metadata_recurse<index + 1, Tail...>(field_labels);
         }
 
-        template <int index, typename... Tail>
-        typename std::enable_if<sizeof...(Tail) == 0>::type write_field_metadata_recurse(
-            const FieldLabels& field_labels) {}
+        template <int index>
+        void write_field_metadata_recurse(const FieldLabels& field_labels) {}
 
         template <typename T>
         std::enable_if_t<std::is_scalar_v<T>> write_additional_format_data(Log& log) {}
@@ -70,13 +69,12 @@ class Log {
         }
 
         template <typename First, typename... Tail>
-        void log_recurse(First value, Tail... tail) {
+        void write_data_recurse(First value, Tail... tail) {
             log_ << value;
-            log_recurse(tail...);
+            write_data_recurse(tail...);
         }
 
-        template <typename... Tail>
-        void log_recurse(Tail... tail) {}
+        void write_data_recurse() {}
 
         Log& log_;
         unsigned int id_;
