@@ -18,24 +18,25 @@ class Log {
     template <typename... Types>
     class Stream {
        public:
-        Stream(Log& log, unsigned int id) : log_(log), id_(id) {}
-
-        template <typename... Labels>
-        typename std::enable_if<sizeof...(Labels) == sizeof...(Types)>::type set_labels(
-            Labels... labels) {
-            log_ << detail::Marker::LABELS << id_;
-            label_recurse(labels...);
-        }
-
         void log(unsigned long timestamp, Types... data) {
             write_data_prefix(timestamp);
             log_recurse(data...);
         }
 
        private:
-        void write_header(const std::string& name) {
+        friend class Log;
+
+        Stream(Log& log,
+               unsigned int id,
+               std::string_view name,
+               const std::array<std::string_view, sizeof...(Types)>& labels)
+            : log_(log), id_(id) {
             log_ << detail::Marker::METADATA << id_ << name;
             write_format();
+            log_ << detail::Marker::LABELS << id_;
+            for (const auto& label : labels) {
+                log_ << label;
+            }
         }
 
         void write_format() {
@@ -67,15 +68,6 @@ class Log {
             }
         }
 
-        template <typename... Labels>
-        void label_recurse(const std::string& first, Labels... labels) {
-            log_ << first;
-            label_recurse(labels...);
-        }
-
-        template <typename... Tail>
-        typename std::enable_if<sizeof...(Tail) == 0>::type label_recurse() {}
-
         void write_data_prefix(unsigned long timestamp) {
             log_ << detail::Marker::DATA << id_ << timestamp;
         }
@@ -89,8 +81,6 @@ class Log {
         template <typename... Tail>
         void log_recurse(Tail... tail) {}
 
-       private:
-        friend class Log;
         Log& log_;
         unsigned int id_;
     };
@@ -100,15 +90,15 @@ class Log {
     ~Log() { file_.close(); }
 
     template <typename... Types>
-    std::shared_ptr<Stream<Types...>> add_stream(const std::string& name) {
-        auto stream = std::make_shared<Stream<Types...>>(*this, next_id_++);
-        stream->write_header(name);
-        return stream;
+    std::shared_ptr<Stream<Types...>> add_stream(
+        std::string_view name, const std::array<std::string_view, sizeof...(Types)>& labels) {
+        return std::shared_ptr<Stream<Types...>>(
+            new Stream<Types...>(*this, next_id_++, name, labels));
     }
 
    private:
-    Log& operator<<(const std::string& data) {
-        file_.write(data.c_str(), sizeof(char) * data.size());
+    Log& operator<<(std::string_view data) {
+        file_.write(data.data(), sizeof(char) * data.length());
         file_ << '\0';  // null terminate strings
         return *this;
     }
