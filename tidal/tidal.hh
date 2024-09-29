@@ -24,35 +24,32 @@ class Log {
         }
 
        private:
+        using FieldLabels = std::array<std::string_view, sizeof...(Types)>;
         friend class Log;
 
-        Stream(Log& log,
-               unsigned int id,
-               std::string_view name,
-               const std::array<std::string_view, sizeof...(Types)>& labels)
+        Stream(Log& log, unsigned int id, std::string_view name, const FieldLabels& field_labels)
             : log_(log), id_(id) {
-            log_ << detail::Marker::METADATA << id_ << name;
-            write_format();
-            log_ << detail::Marker::LABELS << id_;
-            for (const auto& label : labels) {
-                log_ << label;
-            }
+            write_stream_metadata(name, field_labels);
         }
 
-        void write_format() {
-            log_ << static_cast<uint32_t>(sizeof...(Types));
-            format_recurse<Types...>();
+        void write_stream_metadata(std::string_view name, const FieldLabels& field_labels) {
+            log_ << detail::Marker::STREAM_METADATA << id_ << name
+                 << static_cast<int>(sizeof...(Types));
+            write_field_metadata_recurse<0, Types...>(field_labels);
         }
 
-        template <typename First, typename... Tail>
-        void format_recurse() {
+        template <int index, typename First, typename... Tail>
+        void write_field_metadata_recurse(const FieldLabels& field_labels) {
             log_ << detail::resolve_data_type<First>();
             write_additional_format_data<First>(log_);
-            format_recurse<Tail...>();
+            log_ << field_labels[index];
+
+            write_field_metadata_recurse<index + 1, Tail...>(field_labels);
         }
 
-        template <typename... Tail>
-        typename std::enable_if<sizeof...(Tail) == 0>::type format_recurse() {}
+        template <int index, typename... Tail>
+        typename std::enable_if<sizeof...(Tail) == 0>::type write_field_metadata_recurse(
+            const FieldLabels& field_labels) {}
 
         template <typename T>
         std::enable_if_t<std::is_scalar_v<T>> write_additional_format_data(Log& log) {}

@@ -14,8 +14,7 @@ class Log;
 namespace detail {
 
 enum class Marker : uint8_t {
-    METADATA = 0x81,
-    LABELS = 0xC3,
+    STREAM_METADATA = 0xC3,
     DATA = 0xA5,
 };
 

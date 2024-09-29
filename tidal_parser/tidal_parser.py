@@ -88,10 +88,8 @@ class Parser:
                     byte = f.read(1)
                     if byte == detail.Marker.DATA.value:
                         self._read_data(f)
-                    elif byte == detail.Marker.METADATA.value:
-                        self._read_metadata(f)
-                    elif byte == detail.Marker.LABELS.value:
-                        self._read_labels(f)
+                    elif byte == detail.Marker.STREAM_METADATA.value:
+                        self._read_stream_metadata(f)
                     elif byte == detail.EOF:
                         break
                     else:
@@ -100,48 +98,53 @@ class Parser:
                 except EOFError:
                     break
 
-    def _read_metadata(self, f):
+    def _read_stream_metadata(self, f):
         stream_id = self._read_stream_id(f)
         self._metadata[stream_id]["name"] = self._read_string(f)
-        self._metadata[stream_id]["dtype"] = self._read_stream_format(f)
+        self._metadata[stream_id]["num_fields"] = self._read_data_size(f)
+        self._metadata[stream_id]["dtype"] = np.dtype(
+            [
+                self._read_field_dtype_tuple(f)
+                for _ in range(self._metadata[stream_id]["num_fields"])
+            ]
+        )
 
         # initialize bytestreams
         self._time_bytestream[stream_id] = io.BytesIO()
         self._data_bytestream[stream_id] = io.BytesIO()
 
-    def _read_stream_format(self, f) -> np.dtype:
-        num_entries = self._read_data_size(f)
-        return np.dtype(
-            ",".join([self._read_entry_format(f) for _ in range(num_entries)])
-        )
+    def _read_field_dtype_tuple(
+        self, f
+    ) -> tuple[str, type] | tuple[str, type, tuple[int] | tuple[int, int]]:
+        scalar_type, shape = self._read_field_data_type(f)
+        name = self._read_field_name(f)
+        return (name, scalar_type) if shape is None else (name, scalar_type, shape)
 
-    def _read_entry_format(self, f) -> np.dtype:
+    def _read_field_data_type(
+        self, f
+    ) -> tuple[type, None | tuple[int] | tuple[int, int]]:
         data_type = self._read_data_type(f)
         if data_type in detail.SCALAR_DATA_TYPES:
-            return detail.SCALAR_DATA_TYPE_TO_NUMPY_TYPE[data_type]
+            return detail.SCALAR_DATA_TYPE_TO_NUMPY_DTYPE[data_type], None
         if data_type == detail.DataType.VECTOR:
             return self._read_vector_format(f)
         if data_type == detail.DataType.MATRIX:
             return self._read_matrix_format(f)
         raise InvalidLogFile(f"Unsupported data type {data_type}")
 
-    def _read_vector_format(self, f) -> str:
-        scalar_type = self._read_data_type(f)
+    def _read_vector_format(self, f) -> tuple[type, tuple[int]]:
+        scalar_type = detail.SCALAR_DATA_TYPE_TO_NUMPY_DTYPE[self._read_data_type(f)]
         size = self._read_data_size(f)
-        return f"({size},){detail.SCALAR_DATA_TYPE_TO_NUMPY_TYPE[scalar_type]}"
+        return scalar_type, (size,)
 
-    def _read_matrix_format(self, f) -> str:
-        scalar_type = self._read_data_type(f)
+    def _read_matrix_format(self, f) -> tuple[type, tuple[int, int]]:
+        scalar_type = detail.SCALAR_DATA_TYPE_TO_NUMPY_DTYPE[self._read_data_type(f)]
         rows = self._read_data_size(f)
         cols = self._read_data_size(f)
-        return f"({rows},{cols}){detail.SCALAR_DATA_TYPE_TO_NUMPY_TYPE[scalar_type]}"
+        return scalar_type, (rows, cols)
 
-    def _read_labels(self, f):
-        stream_id = self._read_stream_id(f)
-        self._metadata[stream_id]["labels"] = tuple(
-            self._read_string(f) for _ in range(len(self._metadata[stream_id]["dtype"]))
-        )
-        self._metadata[stream_id]["dtype"].names = self._metadata[stream_id]["labels"]
+    def _read_field_name(self, f) -> str:
+        return self._read_string(f)
 
     def _read_string(self, f) -> str:
         b = io.BytesIO()

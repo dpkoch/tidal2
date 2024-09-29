@@ -11,8 +11,7 @@ TIMESTAMP_DTYPE = np.dtype("uint64")
 
 
 class Marker(enum.Enum):
-    METADATA = b"\x81"
-    LABELS = b"\xC3"
+    STREAM_METADATA = b"\xC3"
     DATA = b"\xA5"
 
 
@@ -32,20 +31,20 @@ class DataType(enum.IntEnum):
     MATRIX = 12
 
 
-SCALAR_DATA_TYPE_TO_NUMPY_TYPE = {
-    DataType.U8: "uint8",
-    DataType.I8: "int8",
-    DataType.U16: "uint16",
-    DataType.I16: "int16",
-    DataType.U32: "uint32",
-    DataType.I32: "int32",
-    DataType.U64: "uint64",
-    DataType.I64: "int64",
-    DataType.F32: "float32",
-    DataType.F64: "float64",
-    DataType.BOOLEAN: "bool",
+SCALAR_DATA_TYPE_TO_NUMPY_DTYPE: dict[DataType, type] = {
+    DataType.U8: np.uint8,
+    DataType.I8: np.int8,
+    DataType.U16: np.uint16,
+    DataType.I16: np.int16,
+    DataType.U32: np.uint32,
+    DataType.I32: np.int32,
+    DataType.U64: np.uint64,
+    DataType.I64: np.int64,
+    DataType.F32: np.float32,
+    DataType.F64: np.float64,
+    DataType.BOOLEAN: np.bool,
 }
-SCALAR_DATA_TYPES = list(SCALAR_DATA_TYPE_TO_NUMPY_TYPE.keys())
+SCALAR_DATA_TYPES: list[DataType] = list(SCALAR_DATA_TYPE_TO_NUMPY_DTYPE.keys())
 
 
 class StructFormat(enum.StrEnum):
